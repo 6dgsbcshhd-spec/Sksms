@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Наша дружба</title>
+<style>
+:root{--bg:#15111f;--card:#211b33;--line:#322a4a;--tx:#f4eefc;--mut:#a79bc4;--ac:#ff8fb1;--mint:#7ee0c3;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 Georgia,'Times New Roman',serif;padding-bottom:80px}
+h1,h2,h3{font-weight:700;margin:0 0 8px}
+button,input,textarea,select{font:inherit;color:var(--tx)}
+input,textarea,select{width:100%;background:#17122a;border:1px solid var(--line);border-radius:10px;padding:10px;margin:4px 0 10px}
+button{background:var(--ac);color:#2a0f1b;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer}
+button.g{background:var(--line);color:var(--tx)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.w{max-width:640px;margin:0 auto;padding:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.hello{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.hello h1{font-size:clamp(34px,10vw,64px);line-height:1.1;margin-bottom:28px}
+.big{font-size:clamp(64px,22vw,120px);line-height:1;color:var(--ac);margin:0}
+.row{display:flex;gap:10px;align-items:center}
+.av{width:56px;height:56px;border-radius:50%;background:var(--line) center/cover;display:grid;place-items:center;font-size:24px;flex:none;position:relative}
+.av.l{width:96px;height:96px;font-size:40px}
+.dot{position:absolute;right:0;bottom:2px;width:15px;height:15px;border-radius:50%;border:3px solid var(--card);background:#76708a}
+.dot.on{background:#3ddc84}
+.mut{color:var(--mut);font-size:14px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#1b1530;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px))}
+nav button{background:none;color:var(--mut);padding:6px 8px;font-size:13px}
+nav button.a{color:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.gift{background:#17122a;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.gift b{font-size:34px;display:block}
+.msgs{height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px}
+.m{max-width:80%;padding:8px 12px;border-radius:14px;background:var(--card);align-self:flex-start;word-break:break-word}
+.m.me{background:var(--ac);color:#2a0f1b;align-self:flex-end}
+.m small{display:block;opacity:.7;font-size:11px}
+.coin{color:#ffd166;font-weight:700}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--mint);color:#0d2a22;padding:10px 18px;border-radius:12px;font-weight:700;z-index:9}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+/* ============ 1. НАСТРОЙКИ — вставь свои данные Firebase ============ */
+const firebaseConfig = {
+  databaseURL: "https://shsj-66355-default-rtdb.firebaseio.com",
+  projectId: "shsj-66355"
+};
+const ADMIN_PASS = "change-me-123";   // пароль для входа админа (открой сайт с #admin)
+const ADMIN_ID = "1001", LIZA_ID = "2002";
+/* =================================================================== */
+
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getDatabase,ref,get,set,update,push,onValue,onChildAdded,query,limitToLast,onDisconnect,runTransaction} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const db = getDatabase(initializeApp(firebaseConfig));
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const STATUSES = ["🟢 Онлайн","😴 Сплю","💼 Работаю","🛋 Отдыхаю","🎮 Играю","🍕 Ем","🚶 Гуляю","📚 Учусь"];
+const GIFTS = "🌹 Роза|20,🍫 Шоколадка|15,🧸 Мишка|60,💐 Букет|45,🍰 Тортик|40,☕ Кофе|10,🎈 Шарик|8,💌 Письмо|12,🍭 Леденец|6,🌻 Подсолнух|18,🦄 Единорог|150,🎧 Наушники|200,📚 Книга|55,🕯 Свеча|25,🍓 Клубника|14,🎂 Праздничный торт|90,🌈 Радуга|70,⭐ Звезда|30,🐱 Котик|80,🐶 Щенок|85,💎 Бриллиант|500,👑 Корона|350,🎁 Сюрприз|100,🪩 Диско-шар|120,🍕 Пицца|22,🧁 Капкейк|16,🌙 Луна|65,🔮 Шар судьбы|110,🏆 Кубок|180,💍 Колечко дружбы|300".split(",").map((s,i)=>{const [n,p]=s.split("|");const k=n.indexOf(" ");return {id:"g"+i,e:n.slice(0,k),n:n.slice(k+1),p:+p}});
+const TASKS = [
+ {id:"t1",t:"Напиши что-нибудь в чат",r:10},
+ {id:"t2",t:"Выпей стакан воды",r:5},
+ {id:"t3",t:"Пройдись 15 минут на свежем воздухе",r:20},
+ {id:"t4",t:"Расскажи шутку в чате",r:10},
+ {id:"t5",t:"Напиши, за что ты ценишь друга",r:15},
+ {id:"t6",t:"Скинь в чат песню, которая сегодня в голове",r:15},
+ {id:"t7",t:"Отправь подарок из магазина",r:10},
+ {id:"t8",t:"Сделай 10 приседаний",r:8}
+];
+const EMOJIS_ALL = ["😎","🔥","💖","🌟","🦋","🍀","👑","🎀"];
+
+let S = {users:{},meta:{},gifts:{},claims:{}}, me = localStorage.getItem("me"), tab = "home", viewId = null;
+const today = () => new Date().toISOString().slice(0,10);
+const toast = m => {const d=document.createElement("div");d.className="toast";d.textContent=m;document.body.append(d);setTimeout(()=>d.remove(),2200)};
+
+/* --- вход --- */
+async function boot(){
+  const root = await get(ref(db,"users"));
+  if(!root.exists()){
+    await set(ref(db,"users"),{
+      [ADMIN_ID]:{id:ADMIN_ID,name:"Админ",photo:"",desc:"Создатель сайта",status:STATUSES[0],coins:100,emojis:["👑"],admin:true,online:false},
+      [LIZA_ID]:{id:LIZA_ID,name:"Лиза",photo:"",desc:"Лучшая подруга",status:STATUSES[0],coins:50,emojis:["🌟"],admin:false,online:false}
+    });
+    await set(ref(db,"meta"),{days:0,setAt:Date.now(),text:"Мы дружим уже столько дней!"});
+  }
+  if(location.hash==="#admin" && me!==ADMIN_ID){
+    if(prompt("Пароль админа:")===ADMIN_PASS){me=ADMIN_ID;localStorage.setItem("me",me);localStorage.setItem("seen","1")}
+  }
+  onValue(ref(db,"/"),snap=>{const v=snap.val()||{};S={users:v.users||{},meta:v.meta||{},gifts:v.gifts||{},claims:v.claims||{}};render()});
+  onValue(ref(db,".info/connected"),s=>{
+    if(s.val()===true && me){const r=ref(db,"users/"+me+"/online");onDisconnect(r).set(false);set(r,true)}
+  });
+}
+window.hi = () => {me=LIZA_ID;localStorage.setItem("me",me);localStorage.setItem("seen","1");set(ref(db,"users/"+me+"/online"),true);onDisconnect(ref(db,"users/"+me+"/online")).set(false);render()};
+window.go = t => {tab=t;viewId=null;render()};
+
+/* --- отрисовка --- */
+function avatar(u,big){
+  const st = u.photo ? `style="background-image:url('${esc(u.photo)}')"` : "";
+  return `<div class="av ${big?'l':''}" ${st}>${u.photo?"":esc((u.name||"?")[0])}<i class="dot ${u.online?'on':''}"></i></div>`;
+}
+function days(){const m=S.meta;return (m.days||0)+Math.floor((Date.now()-(m.setAt||Date.now()))/864e5)}
+function render(){
+  const app = $("#app");
+  if(!me){
+    if(!localStorage.getItem("seen")){
+      app.innerHTML = `<div class="hello"><h1>Привет, Лиза 💜</h1><p class="mut" style="margin-top:-12px;margin-bottom:24px">Нажми на кнопку ниже</p><button onclick="hi()">Нажми меня</button></div>`;
+    } else app.innerHTML = `<div class="hello"><h1>Привет, Лиза 💜</h1><button onclick="hi()">Войти</button></div>`;
+    return;
+  }
+  const u = S.users[me]; if(!u){app.innerHTML="<p class='w'>Загрузка…</p>";return}
+  const act = document.activeElement;
+  if(act && /INPUT|TEXTAREA|SELECT/.test(act.tagName) && act.closest("#view")){ if(tab==="chat") chatRefresh(); return }
+  const tabs = [["home","🏠","Мы"],["profile","👤","Профиль"],["shop","🎁","Магазин"],["tasks","✅","Задания"],["chat","💬","Чат"]];
+  if(u.admin) tabs.push(["admin","🛠","Админ"]);
+  app.innerHTML = `<div class="w"><div id="view">${views[tab]()}</div></div><nav>${tabs.map(t=>`<button class="${tab===t[0]?'a':''}" onclick="go('${t[0]}')">${t[1]}<br>${t[2]}</button>`).join("")}</nav>`;
+  if(tab==="chat") chatInit();
+}
+const profileCard = (u,click) => `<div class="card row" ${click?`onclick="viewId='${u.id}';tab='profile';render()" style="cursor:pointer"`:""}>${avatar(u)}<div><b>${esc(u.name)} ${(u.emojis||[]).map(esc).join("")}</b><div class="mut">${esc(u.status)} · ${u.online?"в сети":"не в сети"}</div></div></div>`;
+
+const views = {
+  home:()=>`<div class="card" style="text-align:center"><div class="mut">Мы дружим уже</div><p class="big">${days()}</p><h3>дн.</h3><p>${esc(S.meta.text)}</p></div>${Object.values(S.users).map(u=>profileCard(u,true)).join("")}`,
+
+  profile:()=>{
+    const id = viewId||me, u = S.users[id]; if(!u) return "";
+    const own = id===me;
+    const gifts = Object.values(S.gifts).filter(g=>g.to===id).sort((a,b)=>b.t-a.t);
+    return `<div class="card" style="text-align:center">${avatar(u,1)}<h2>${esc(u.name)} ${(u.emojis||[]).map(esc).join("")}</h2><div class="mut">ID: ${esc(u.id)}${u.admin?" · админ":""}</div><div>${esc(u.status)}</div><p>${esc(u.desc)}</p><div class="coin">🪙 ${u.coins||0} лизокоинов</div></div>
+    ${own?`<div class="card"><h3>Оформление</h3>
+      <label class="mut">Никнейм</label><input id="pn" value="${esc(u.name)}" maxlength="24">
+      <label class="mut">Ссылка на фото</label><input id="pp" value="${esc(u.photo)}" placeholder="https://...">
+      <label class="mut">Описание</label><textarea id="pd" rows="3" maxlength="200">${esc(u.desc)}</textarea>
+      <label class="mut">Статус</label><select id="ps">${STATUSES.map(s=>`<option ${s===u.status?"selected":""}>${s}</option>`).join("")}</select>
+      <button onclick="saveProfile()">Сохранить</button></div>`:`<button class="g" onclick="viewId=null;render()">← К моему профилю</button>`}
+    <div class="card"><h3>Подарки (${gifts.length})</h3>${gifts.length?`<div class="grid">${gifts.map(g=>`<div class="gift"><b>${esc(g.e)}</b>${esc(g.n)}<div class="mut">от ${esc((S.users[g.from]||{}).name)}</div></div>`).join("")}</div>`:`<p class="mut">Пока пусто. Загляни в магазин!</p>`}</div>`;
+  },
+
+  shop:()=>{
+    const other = Object.values(S.users).find(x=>x.id!==me);
+    return `<div class="card"><h3>Магазин подарков</h3><div class="mut">Твой баланс: <span class="coin">🪙 ${S.users[me].coins||0}</span> · получатель: ${esc(other?.name)}</div></div>
+    <div class="grid">${GIFTS.map(g=>`<div class="gift"><b>${g.e}</b>${g.n}<div class="coin">🪙 ${g.p}</div><button style="margin-top:6px;padding:6px 12px" onclick="buy('${g.id}')">Подарить</button></div>`).join("")}</div>`;
+  },
+
+  tasks:()=>{
+    const c = (S.claims[me]||{});
+    return `<div class="card"><h3>Задания</h3><div class="mut">Каждое можно выполнить раз в день. Баланс: <span class="coin">🪙 ${S.users[me].coins||0}</span></div></div>`+
+    TASKS.map(t=>{const done=c[t.id]===today();return `<div class="card row"><div style="flex:1">${t.t}<div class="coin">+${t.r} 🪙</div></div><button ${done?"disabled class='g'":""} onclick="claim('${t.id}')">${done?"Готово":"Выполнено"}</button></div>`}).join("");
+  },
+
+  chat:()=>`<div class="card"><div class="msgs" id="msgs"></div><div class="row"><input id="ci" placeholder="Сообщение…" maxlength="500" onkeydown="if(event.key==='Enter')send()" style="margin:0"><button onclick="send()">➤</button></div></div>`,
+
+  admin:()=>{
+    const us = Object.values(S.users);
+    return `<div class="card"><h3>Дни дружбы</h3><input id="ad" type="number" value="${days()}"><label class="mut">Текст под счётчиком</label><textarea id="at" rows="2">${esc(S.meta.text)}</textarea><button onclick="saveDays()">Сохранить</button></div>
+    <div class="card"><h3>Выдать права админа</h3><label class="mut">Введи уникальный ID аккаунта</label><input id="gid" placeholder="например 2002" oninput="findId()"><div id="found" class="mut"></div></div>
+    <div class="card"><h3>Аккаунты</h3>${us.map(u=>`<div style="border-top:1px solid var(--line);padding:10px 0"><div class="row">${avatar(u)}<div><b>${esc(u.name)}</b><div class="mut">ID ${u.id} · 🪙 ${u.coins||0}${u.admin?" · админ":""}</div></div></div>
+      <input id="n_${u.id}" value="${esc(u.name)}"><textarea id="d_${u.id}" rows="2">${esc(u.desc)}</textarea>
+      <button class="g" onclick="adminEdit('${u.id}')">Сохранить имя/описание</button>
+      <div class="row" style="margin-top:8px"><input id="c_${u.id}" type="number" placeholder="± лизокоины" style="margin:0"><button onclick="giveCoins('${u.id}')">Выдать</button></div>
+      <div class="row" style="flex-wrap:wrap;margin-top:8px">${EMOJIS_ALL.map(e=>`<button class="g" style="padding:6px 10px" onclick="toggleEmoji('${u.id}','${e}')">${(u.emojis||[]).includes(e)?"✔":""}${e}</button>`).join("")}</div></div>`).join("")}</div>`;
+  }
+};
+
+/* --- действия --- */
+window.saveProfile = async()=>{await update(ref(db,"users/"+me),{name:$("#pn").value.trim()||"Без имени",photo:$("#pp").value.trim(),desc:$("#pd").value,status:$("#ps").value});toast("Профиль сохранён");document.activeElement.blur();render()};
+window.buy = async id=>{
+  const g = GIFTS.find(x=>x.id===id), to = Object.keys(S.users).find(k=>k!==me);
+  if(!to||!confirm(`Подарить «${g.n}» за ${g.p} 🪙?`)) return;
+  const r = await runTransaction(ref(db,"users/"+me+"/coins"),c=>(c||0)>=g.p?c-g.p:undefined);
+  if(!r.committed) return toast("Не хватает лизокоинов");
+  await push(ref(db,"gifts"),{from:me,to,e:g.e,n:g.n,t:Date.now()});
+  toast("Подарок отправлен!");
+};
+window.claim = async id=>{
+  const t = TASKS.find(x=>x.id===id);
+  if((S.claims[me]||{})[id]===today()) return;
+  await set(ref(db,`claims/${me}/${id}`),today());
+  await runTransaction(ref(db,"users/"+me+"/coins"),c=>(c||0)+t.r);
+  toast(`+${t.r} лизокоинов`);
+};
+window.send = async()=>{const i=$("#ci"),v=i.value.trim();if(!v)return;i.value="";await push(ref(db,"chat"),{u:me,n:S.users[me].name,m:v,t:Date.now()})};
+window.saveDays = async()=>{await set(ref(db,"meta"),{days:+$("#ad").value||0,setAt:Date.now(),text:$("#at").value});toast("Сохранено");document.activeElement.blur();render()};
+window.findId = ()=>{
+  const u = S.users[$("#gid").value.trim()], f=$("#found");
+  f.innerHTML = u?`${esc(u.name)} (ID ${u.id}) — ${u.admin?"уже админ":"не админ"} <button style="padding:4px 10px;margin-left:6px" onclick="setAdmin('${u.id}',${!u.admin})">${u.admin?"Забрать права":"Дать права"}</button>`:"Аккаунт не найден";
+};
+window.setAdmin = async(id,v)=>{if(id===ADMIN_ID&&!v)return toast("Главного админа нельзя лишить прав");await update(ref(db,"users/"+id),{admin:v});toast("Готово");$("#gid").blur()};
+window.adminEdit = async id=>{await update(ref(db,"users/"+id),{name:$("#n_"+id).value,desc:$("#d_"+id).value});toast("Сохранено")};
+window.giveCoins = async id=>{const n=+$("#c_"+id).value;if(!n)return;await runTransaction(ref(db,`users/${id}/coins`),c=>Math.max(0,(c||0)+n));toast("Лизокоины выданы")};
+window.toggleEmoji = async(id,e)=>{const a=S.users[id].emojis||[];await set(ref(db,`users/${id}/emojis`),a.includes(e)?a.filter(x=>x!==e):[...a,e])};
+
+/* --- чат --- */
+let chatCache = [], chatStarted = false;
+function chatInit(){
+  if(!chatStarted){chatStarted=true;onChildAdded(query(ref(db,"chat"),limitToLast(100)),s=>{chatCache.push(s.val());if(tab==="chat")chatRefresh()})}
+  chatRefresh();
+}
+function chatRefresh(){
+  const box=$("#msgs"); if(!box) return;
+  const down = box.scrollHeight-box.scrollTop-box.clientHeight<60;
+  box.innerHTML = chatCache.map(m=>`<div class="m ${m.u===me?'me':''}"><small>${esc(m.n)} · ${new Date(m.t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small>${esc(m.m)}</div>`).join("")||`<p class="mut">Напиши первое сообщение</p>`;
+  if(down||chatCache.length<2) box.scrollTop=box.scrollHeight;
+}
+
+boot();
+</script>
+</body>
+</html>
